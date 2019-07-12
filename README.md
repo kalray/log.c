@@ -1,69 +1,87 @@
-# log.c
-A simple logging library implemented in C99
+# simple_log
+A simple logging library based on rxi log.c (https://github.com/rxi/log.c)
+This library was enhanced with basic loggers and environment variable parsing
+to initialize the library.
 
-![screenshot](https://cloud.githubusercontent.com/assets/3920290/23831970/a2415e96-0723-11e7-9886-f8f5d2de60fe.png)
+![screenshot](screenshot.png)
 
 
 ## Usage
-**[log.c](src/log.c?raw=1)** and **[log.h](src/log.h?raw=1)** should be dropped
-into an existing project and compiled along with it. The library provides 6
-function-like macros for logging:
+**[simple_log.c](src/simple_log.c?raw=1)** and **[simple_log.h](include/simple_log.h?raw=1)** should be included into an existing project and compiled along with it.
+In order to use it, one can look at the example provided **[simple_log_test.c](test/simple_log_test.c?raw=1)**.
+
+Before using it, the library must be initialized. First call is to initialize the loggers using `simple_log_set_loggers`:
+
+```c 
+enum my_logger {       
+	LOGGER_1,
+	LOGGER_2,
+	LOGGER_COUNT,
+};
+
+static const char *logger_names[LOGGER_COUNT] =
+{
+	[LOGGER_1] = "logger1",
+	[LOGGER_2] = "logger2",
+};
+
+int main()
+{
+	...
+	simple_log_set_loggers(logger_names, LOGGER_COUNT);
+	...
+}
+```
+
+This will define the loggers count and names.
+Then, `simple_log_init` should be called to initialize logging according to an environnement variable value.
+```c
+simple_log_init("MY_LOG");
+```
+
+`MY_LOG` should contain the levels of logging according to the following specification :
+- `help`: display the available loggers names
+- `<number>:[<logger1_name>.<logger1_level>:]`. Using this notation allows to set the global level first (`<number>`) and then loggers level independently.
+
+Levels are numbered according to the following:
+ - 0: Fatal
+ - 1: Error
+ - 2: Warning
+ - 3: Informations
+ - 4: Debug
+ - 5: Trace
+
+For instance to set global level to TRACE and logger2 level to FATAL, the following string should be used:
+```
+MY_LOG=5:logger2.0
+```
+
+For logging, the library provides 6 function-like macros:
 
 ```c
-log_trace(const char *fmt, ...);
-log_debug(const char *fmt, ...);
-log_info(const char *fmt, ...);
-log_warn(const char *fmt, ...);
-log_error(const char *fmt, ...);
-log_fatal(const char *fmt, ...);
+simple_log_trace(int logger, const char *fmt, ...);
+simple_log_debug(int logger, const char *fmt, ...);
+simple_log_info(int logger, const char *fmt, ...);
+simple_log_warn(int logger, const char *fmt, ...);
+simple_log_error(int logger, const char *fmt, ...);
+simple_log_fatal(int logger, const char *fmt, ...);
 ```
 
 Each function takes a printf format string followed by additional arguments:
 
 ```c
-log_trace("Hello %s", "world")
+simple_log_trace(logger, "Hello %s", "world")
 ```
 
 Resulting in a line with the given format printed to stderr:
 
 ```
-20:18:26 TRACE src/main.c:11: Hello world
+20:18:26 TRACE src/main.c:11: [logger] Hello world
 ```
 
-
-#### log_set_quiet(int enable)
-Quiet-mode can be enabled by passing `1` to the `log_set_quiet()` function.
-While this mode is enabled the library will not output anything to stderr, but
-will continue to write to the file if one is set.
-
-
-#### log_set_level(int level)
-The current logging level can be set by using the `log_set_level()` function.
-All logs below the given level will be ignored. By default the level is
-`LOG_TRACE`, such that nothing is ignored.
-
-
-#### log_set_fp(FILE *fp)
-A file pointer where the log should be written can be provided to the library by
-using the `log_set_fp()` function. The data written to the file output is
-of the following format:
-
-```
-2047-03-11 20:18:26 TRACE src/main.c:11: Hello world
-```
-
-
-#### log_set_lock(log_LockFn fn)
-If the log will be written to from multiple threads a lock function can be set.
-The function is passed a `udata` value (set by `log_set_udata()`) and the
-integer `1` if the lock should be acquired or `0` if the lock should be
-released.
-
-
-#### LOG_USE_COLOR
-If the library is compiled with `-DLOG_USE_COLOR` ANSI color escape codes will
+#### SIMPLE_LOG_USE_COLOR
+If the library is compiled with `-DSIMPLE_LOG_USE_COLOR` ANSI color escape codes will
 be used when printing.
-
 
 ## License
 This library is free software; you can redistribute it and/or modify it under
